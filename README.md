@@ -1,4 +1,4 @@
-For the script to work:
-1. Put the script and the config folder in the same folder
-2. When you run the script for the first time, specify the folder where the script works
-3. Create!
+Данный скрипт служит "билдером настроек" для DLC AlternatoveHack cs 1.6 (Верссий до 24 года включительно)
+- Вам нужно установить скрипт в любую директорию
+- Запустить и выбрать нужные значения
+- После создания настроек переместить их в папку настроек DLC
