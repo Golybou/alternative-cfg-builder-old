@@ -1,20 +1,15 @@
 import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog
 import shutil
 import os
 import math
 import re
-import winreg
-import time
-import sys
-import webbrowser
 
-CONFIG_FILE = 'script.cfg'
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FOLDER = os.path.join(SCRIPT_DIR, 'config')
+COMPLETED_CONFIG_PATH = os.path.join(SCRIPT_DIR, 'complited cfg.ini')
 
 window = tk.Tk()
 window.resizable(0, 0)
-folder_path = tk.StringVar(window)
 scrollbar = tk.Scale(window, from_=5, to=100, orient=tk.HORIZONTAL)
 ini_file_label = tk.Label(window)
 
@@ -37,10 +32,10 @@ def choose_ini_file():
     return ini_file
 
 def adjust_weapon(attribute, value):
-    with open('complited cfg.ini', 'r') as f:
+    with open(COMPLETED_CONFIG_PATH, 'r', encoding='utf-8') as f:
         lines = f.readlines()
 
-    with open('complited cfg.ini', 'w') as f:
+    with open(COMPLETED_CONFIG_PATH, 'w', encoding='utf-8') as f:
         for line in lines:
             if line.startswith(attribute + '='):
                 f.write(f'{attribute}={value}\n')
@@ -48,10 +43,10 @@ def adjust_weapon(attribute, value):
                 f.write(line)
 
 def apply_smart_awp_scout():
-    with open('complited cfg.ini', 'r') as f:
+    with open(COMPLETED_CONFIG_PATH, 'r', encoding='utf-8') as f:
         lines = f.readlines()
 
-    with open('complited cfg.ini', 'w') as f:
+    with open(COMPLETED_CONFIG_PATH, 'w', encoding='utf-8') as f:
         is_in_section = False
         for line in lines:
             stripped_line = line.strip()
@@ -83,10 +78,10 @@ def apply_smart_awp_scout():
                 f.write(line)
 
 def adjust_general_parameters():
-    with open('complited cfg.ini', 'r') as f:
+    with open(COMPLETED_CONFIG_PATH, 'r', encoding='utf-8') as f:
         lines = f.readlines()
 
-    with open('complited cfg.ini', 'w') as f:
+    with open(COMPLETED_CONFIG_PATH, 'w', encoding='utf-8') as f:
         for line in lines:
             if line.startswith('trigger_only_zoomed='):
                 f.write(f'trigger_only_zoomed=1\n')
@@ -106,7 +101,7 @@ def trigger_window():
         choose_speed_scale()
 
     def trigger_disable():
-        adjust_weapon("trigger_disable", "0")
+        adjust_weapon("trigger_enable", "0")
         trigger_window.destroy()
         choose_speed_scale()
 
@@ -135,15 +130,14 @@ def trigger_window():
 def choose_psilent():
     def set_value():
         psilent_value = psilent_scale.get()
-        with open('complited cfg.ini', 'r') as f:
+        with open(COMPLETED_CONFIG_PATH, 'r', encoding='utf-8') as f:
             lines = f.readlines()
-        with open('complited cfg.ini', 'w') as f:
+        with open(COMPLETED_CONFIG_PATH, 'w', encoding='utf-8') as f:
             for line in lines:
                 new_line = re.sub(r'(aim_psilent\s*=).*', r'\g<1>' + f'{psilent_value}', line)
                 f.write(new_line)
         psilent_window.destroy()
         trigger_window() 
-
 
     def skip_value():
         psilent_window.destroy()
@@ -178,7 +172,6 @@ def choose_psilent():
 
     center_window(psilent_window)
 
-
 def choose_esp():
     def set_values():
         adjust_weapon("esp_player_type", "1")
@@ -189,7 +182,7 @@ def choose_esp():
         adjust_weapon("esp_sound_only_enemy", "1")
         adjust_weapon("esp_bomb", "1")
         esp_window.destroy()
-        successfully_created_config()  # Call the function here after all actions are done
+        successfully_created_config()
 
     def skip_values():
         esp_window.destroy()
@@ -224,9 +217,9 @@ def choose_esp():
 def choose_speed_scale():
     def set_value():
         speed_scale_value = speed_scale.get()
-        with open('complited cfg.ini', 'r') as f:
+        with open(COMPLETED_CONFIG_PATH, 'r', encoding='utf-8') as f:
             lines = f.readlines()
-        with open('complited cfg.ini', 'w') as f:
+        with open(COMPLETED_CONFIG_PATH, 'w', encoding='utf-8') as f:
             for line in lines:
                 new_line = re.sub(r'(aim_speed_scale\s*=).*', r'\g<1>' + f'{speed_scale_value}', line)
                 f.write(new_line)
@@ -235,6 +228,7 @@ def choose_speed_scale():
 
     def skip_value():
         speed_window.destroy()
+        choose_esp()
 
     speed_window = tk.Toplevel(window)
     speed_window.resizable(0, 0)
@@ -249,7 +243,6 @@ def choose_speed_scale():
     position_top = int(screen_height / 2 - speed_window_height / 2)
     position_right = int(screen_width / 2 - speed_window_width / 2)
 
-    # Set window geometry
     speed_window.geometry(f'{speed_window_width}x{speed_window_height}+{position_right}+{position_top}')
 
     label = tk.Label(speed_window, text="Select Hover acceleration")
@@ -266,65 +259,40 @@ def choose_speed_scale():
 
     center_window(speed_window)
 
-
 def copy_ini_file():
     global scrollbar
     ini_file = choose_ini_file()
-    script_dir = folder_path.get()
-    source_folder = os.path.join(script_dir, 'config')
 
-    if not os.path.exists(source_folder):
-        for dirpath, dirnames, filenames in os.walk(script_dir):
-            for filename in filenames:
-                if filename.endswith('.ini'):
-                    source_folder = dirpath
-                    break
-
-    ini_file_path = os.path.join(source_folder, ini_file)
-
-    if not os.path.exists(ini_file_path):
-        print('File does not exist')
+    if not os.path.exists(CONFIG_FOLDER):
+        error_window = tk.Toplevel(window)
+        error_window.title("Error")
+        error_window.geometry("400x100")
+        
+        ok_button = tk.Button(error_window, text="OK", command=error_window.destroy)
+        ok_button.pack()
+        
+        center_window(error_window)
         return
 
-    copied_file_name = os.path.join(script_dir, 'complited cfg.ini')
+    ini_file_path = os.path.join(CONFIG_FOLDER, ini_file)
 
-    shutil.copy2(ini_file_path, copied_file_name)
-    print('File copied successfully')
+    if not os.path.exists(ini_file_path):
+        error_window = tk.Toplevel(window)
+        error_window.title("Error")
+        error_window.geometry("400x100")
+
+        
+        ok_button = tk.Button(error_window, text="OK", command=error_window.destroy)
+        ok_button.pack()
+        
+        center_window(error_window)
+        return
+
+    shutil.copy2(ini_file_path, COMPLETED_CONFIG_PATH)
+    print(f'File copied successfully to {COMPLETED_CONFIG_PATH}')
     choose_psilent()
     adjust_general_parameters()
     apply_smart_awp_scout()
-
-
-def get_folder_path():
-    window.withdraw()
-    dir_path = filedialog.askdirectory(title="Choosing the path to the script")
-    window.deiconify()
-
-    folder_path.set(dir_path)
-    with open(CONFIG_FILE, 'w') as f:
-        f.write(dir_path)
-    return dir_path
-
-
-def check_config_file():
-    if os.path.isfile(CONFIG_FILE):
-        with open(CONFIG_FILE, 'r') as f:
-            dir_path = f.readline().strip()
-            if os.path.isdir(dir_path):
-                folder_path.set(dir_path)
-                return dir_path
-
-    window.withdraw()
-    dir_path = filedialog.askdirectory(title="Choosing the path to the script")
-    window.deiconify()
-
-    if dir_path != "":
-        folder_path.set(dir_path)
-        with open(CONFIG_FILE, 'w') as f:
-            f.write(dir_path)
-        return dir_path
-
-    return None
 
 def successfully_created_config():
     def close_everything():
@@ -334,7 +302,7 @@ def successfully_created_config():
     success_window = tk.Toplevel(window)
     success_window.resizable(0, 0)
     success_window.title("Confirm!")
-    success_window.geometry("250x120")
+    success_window.geometry("300x140")
 
     label = tk.Label(success_window, text="The configuration has been created successfully!")
     label.pack(pady=20)
@@ -347,37 +315,31 @@ def successfully_created_config():
 def window_main():
     global scrollbar, ini_file_label
 
-    config_dir = check_config_file() or get_folder_path()
+    window.title("ALTERNATIVE config Builder by Golyb0u")
 
-    if config_dir:
-        window.title("ALTERNATIVE config Builder by Golyb0u")
+    window_width = 500
+    window_height = 330
 
-        window_width = 500
-        window_height = 330
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
 
-        screen_width = window.winfo_screenwidth()
-        screen_height = window.winfo_screenheight()
+    position_top = int(screen_height / 2 - window_height / 2)
+    position_right = int(screen_width / 2 - window_width / 2)
 
-        position_top = int(screen_height / 2 - window_height / 2)
-        position_right = int(screen_width / 2 - window_width / 2)
+    window.geometry(f'{window_width}x{window_height}+{position_right}+{position_top}')
 
-        window.geometry(f'{window_width}x{window_height}+{position_right}+{position_top}')
+    label = tk.Label(window, text="Choosing the percentage of legitness")
+    label.pack()
 
-        label = tk.Label(window, text="Choosing the percentage of legitness")
-        label.pack()
+    label2 = tk.Label(window, text="(The higher the percentage, the more legit the setup will be)")
+    label2.pack()
 
-        label2 = tk.Label(window, text="(The higher the percentage, the more legit the setup will be)")
-        label2.pack()
+    scrollbar = tk.Scale(window, from_=5, to=100, length=250, orient=tk.HORIZONTAL)
+    scrollbar.pack(pady=100)
 
-        scrollbar = tk.Scale(window, from_=5, to=100,length=250, orient=tk.HORIZONTAL)
-        scrollbar.pack(pady=100)  
+    choose_btn = tk.Button(window, text="Confirm", command=copy_ini_file)
+    choose_btn.pack()
 
-        choose_btn = tk.Button(window, text="Confirm", command=copy_ini_file)
-        choose_btn.pack()
-
-        window.mainloop()
-
-    else:
-        print("The path to the script is not selected.")
+    window.mainloop()
 
 window_main()
